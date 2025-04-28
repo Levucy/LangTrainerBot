@@ -1,1 +1,1 @@
-# WordMasterBot
+# LangTrainerBot
