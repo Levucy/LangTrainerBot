@@ -10,19 +10,19 @@ words = {
     "big": "большой",
     "bird": "птица",
     "book": "книга",
-    "car": "машина",
-    "cat": "кошка",
+    "car": ["машина", "автомобиль"],
+    "cat": ["кошка", "кот"],
     "city": "город",
     "cold": "холодный",
     "computer": "компьютер",
-    "dog": "собака",
+    "dog": ["собака", "пес"],
     "door": "дверь",
     "fast": "быстрый",
     "fish": "рыба",
     "friend": "друг",
     "good": "хороший",
     "grape": "виноград",
-    "happy": "счастливый",
+    "happy": ["счастливый", "радостный", "веселый"],
     "hot": "горячий",
     "house": "дом",
     "key": "ключ",
@@ -30,10 +30,10 @@ words = {
     "moon": "луна",
     "music": "музыка",
     "new": "новый",
-    "orange": "апельсин",
+    "orange": ["апельсин", "оранжевый"],
     "pen": "ручка",
     "phone": "телефон",
-    "rabbit": "кролик",
+    "rabbit": ["кролик", "заяц"],
     "rain": "дождь",
     "sad": "грустный",
     "school": "школа",
@@ -113,7 +113,7 @@ async def quiz_answer(update, context):
         # print([user, streak, word, translation, message, quizzing])
         if quizzing == 1:
             db1.execute("UPDATE streak SET quizzing = 0 WHERE username = ?", (user,))
-            if message.lower() == translation:
+            if quiz_answer_check(word, translation): # message.lower() == translation:
                 db1.execute("UPDATE streak SET streak = ? WHERE username = ?", (streak + 1, user))
                 await update.message.reply_text(f"Это правильный ответ!\nВы верно угадали {streak + 1} слов!")
             else:
@@ -121,6 +121,17 @@ async def quiz_answer(update, context):
                 await update.message.reply_text(f"Ответ неверный, {word} переводится как {translation}.")
         db.commit()
         db.close()
+
+
+async def quiz_answer_check(word, translation):
+    translation = translation.replace("ё", "е")
+    symbols = ["й", "ц", "у", "к", "е", "н", "г", "ш", "щ", "з", "х", "ъ", "ф", "ы", "в", "а", "п", "р", "о", "л", "д",
+               "ж", "э", "я", "ч", "с", "м", "и", "т", "ь", "б", "ю"]
+    if translation in words[word]:
+        return True
+    if translation[-2:] in ["ый", "ое", "ая"]:
+        return True
+    return False
 
 
 async def unknown(update, context):
