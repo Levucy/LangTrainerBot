@@ -1,4 +1,3 @@
-from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import random
 import sqlite3
@@ -65,18 +64,24 @@ async def learn(update, context):
 async def quiz(update, context):
     user = update.message.from_user.username
     streak = 0
-    # print(user)
+    count = 0
+    print([user])
     word, translation = random.choice(list(words.items()))
 
-    if user:
+    if len(user) > 0:
         db = sqlite3.connect("TelegramBotDB")
         db1 = db.cursor()
         db2 = db1.execute("SELECT username FROM streak WHERE username = ?", (user,))
         for a in db2:
-            if a[0] != user:
-                db1.execute("INSERT INTO streak(username, streak) VALUES(?, ?)", (user, streak))
-            else:
-                db1.execute("UPDATE streak SET lastword = ? WHERE username = ?", (word, user))
+            count += 1
+        if count == 0:
+            print(f'{user} was added to the database')
+            db1.execute("INSERT INTO streak(username, streak, lastword, quizzing) VALUES(?, ?, ?, ?)",
+                        (user, streak, word, 1))
+        else:
+            print(f'{user} used /quiz command')
+            db1.execute("UPDATE streak SET lastword = ? WHERE username = ?", (word, user))
+            db1.execute("UPDATE streak SET quizzing = 1 WHERE username = ?", (user,))
         # print(db2)
         # db1.execute("INSERT INTO streak(username, streak) VALUES(?, ?)", (user, streak))
         db.commit()
@@ -92,17 +97,30 @@ async def quiz_answer(update, context):
     streak = 0
     message = update.message.text
     word = ''
+    quizzing = 0
+    translation = ''
+    print([user, message])
 
     if user:
         db = sqlite3.connect("TelegramBotDB")
         db1 = db.cursor()
-        db2 = db1.execute("SELECT lastword FROM streak WHERE username = ?", (user,))
+        db2 = db1.execute("SELECT streak, lastword, quizzing FROM streak WHERE username = ?", (user,))
         for a in db2:
-            word = a[0]
-        if message == word:
-            await update.message.reply_text(f"Это правильный ответ!\nВы верно угадали {streak} слов!")
-        else:
-            await update.message.reply_text(f"Ответ неверный, {word} переводится как {words[word]}.")
+            streak = int(a[0])
+            word = a[1]
+            translation = words[word]
+            quizzing = int(a[2])
+        # print([user, streak, word, translation, message, quizzing])
+        if quizzing == 1:
+            db1.execute("UPDATE streak SET quizzing = 0 WHERE username = ?", (user,))
+            if message.lower() == translation:
+                db1.execute("UPDATE streak SET streak = ? WHERE username = ?", (streak + 1, user))
+                await update.message.reply_text(f"Это правильный ответ!\nВы верно угадали {streak + 1} слов!")
+            else:
+                db1.execute("UPDATE streak SET streak = 0 WHERE username = ?", (user,))
+                await update.message.reply_text(f"Ответ неверный, {word} переводится как {translation}.")
+        db.commit()
+        db.close()
 
 
 async def unknown(update, context):
@@ -110,7 +128,7 @@ async def unknown(update, context):
 
 
 def main() -> None:
-    application = Application.builder().token("7999823112:AAHyysck9NAuPL2D5LY2rjOBE8LmFHUAtq4").build()
+    application = Application.builder().token("7999823112:AAGc6zD2L0mrGjuIUzFMuTNiEEVaWi_KUDY").build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("learn", learn))
     application.add_handler(CommandHandler("quiz", quiz))
