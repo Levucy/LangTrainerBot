@@ -4,50 +4,50 @@ import sqlite3
 
 
 words = {
-    "apple": "яблоко",
-    "banana": "банан",
-    "beautiful": "красивый",
-    "big": "большой",
-    "bird": "птица",
-    "book": "книга",
+    "apple": ["яблоко"],
+    "banana": ["банан"],
+    "beautiful": ["красивый"],
+    "big": ["большой"],
+    "bird": ["птица"],
+    "book": ["книга"],
     "car": ["машина", "автомобиль"],
     "cat": ["кошка", "кот"],
-    "city": "город",
-    "cold": "холодный",
-    "computer": "компьютер",
+    "city": ["город"],
+    "cold": ["холодный"],
+    "computer": ["компьютер"],
     "dog": ["собака", "пес"],
-    "door": "дверь",
-    "fast": "быстрый",
-    "fish": "рыба",
-    "friend": "друг",
-    "good": "хороший",
-    "grape": "виноград",
+    "door": ["дверь"],
+    "fast": ["быстрый"],
+    "fish": ["рыба"],
+    "friend": ["друг"],
+    "good": ["хороший"],
+    "grape": ["виноград"],
     "happy": ["счастливый", "радостный", "веселый"],
-    "hot": "горячий",
-    "house": "дом",
-    "key": "ключ",
-    "light": "свет",
-    "moon": "луна",
-    "music": "музыка",
-    "new": "новый",
+    "hot": ["горячий"],
+    "house": ["дом"],
+    "key": ["ключ"],
+    "light": ["свет"],
+    "moon": ["луна"],
+    "music": ["музыка"],
+    "new": ["новый"],
     "orange": ["апельсин", "оранжевый"],
-    "pen": "ручка",
-    "phone": "телефон",
+    "pen": ["ручка"],
+    "phone": ["телефон"],
     "rabbit": ["кролик", "заяц"],
-    "rain": "дождь",
-    "sad": "грустный",
-    "school": "школа",
-    "slow": "медленный",
-    "small": "маленький",
-    "sun": "солнце",
-    "time": "время",
-    "tree": "дерево",
-    "water": "вода",
-    "watermelon": "арбуз",
-    "window": "окно",
-    "work": "работа",
-    "world": "мир",
-    "year": "год"
+    "rain": ["дождь"],
+    "sad": ["грустный"],
+    "school": ["школа"],
+    "slow": ["медленный"],
+    "small": ["маленький"],
+    "sun": ["солнце"],
+    "time": ["время"],
+    "tree": ["дерево"],
+    "water": ["вода"],
+    "watermelon": ["арбуз"],
+    "window": ["окно"],
+    "work": ["работа"],
+    "world": ["мир"],
+    "year": ["год"]
 }
 
 
@@ -113,23 +113,25 @@ async def quiz_answer(update, context):
         # print([user, streak, word, translation, message, quizzing])
         if quizzing == 1:
             db1.execute("UPDATE streak SET quizzing = 0 WHERE username = ?", (user,))
-            if quiz_answer_check(word, translation): # message.lower() == translation:
+            if await quiz_answer_check(word, message.lower()): # message.lower() == translation:
                 db1.execute("UPDATE streak SET streak = ? WHERE username = ?", (streak + 1, user))
                 await update.message.reply_text(f"Это правильный ответ!\nВы верно угадали {streak + 1} слов!")
             else:
                 db1.execute("UPDATE streak SET streak = 0 WHERE username = ?", (user,))
-                await update.message.reply_text(f"Ответ неверный, {word} переводится как {translation}.")
+                await update.message.reply_text(f"Ответ неверный, {word} переводится как {', '.join(translation)}.")
         db.commit()
         db.close()
 
 
-async def quiz_answer_check(word, translation):
-    translation = translation.replace("ё", "е")
+async def quiz_answer_check(word, message):
+    message = message.replace("ё", "е")
     symbols = ["й", "ц", "у", "к", "е", "н", "г", "ш", "щ", "з", "х", "ъ", "ф", "ы", "в", "а", "п", "р", "о", "л", "д",
                "ж", "э", "я", "ч", "с", "м", "и", "т", "ь", "б", "ю"]
-    if translation in words[word]:
+    print([message[:-2], ''.join(words[word])[:-2]])
+    if message in words[word]:
+        print([word, message, words[word]])
         return True
-    if translation[-2:] in ["ый", "ое", "ая"]:
+    if message[-2:] in ["ый", "ое", "ая"] and message[:-2] in ''.join(words[word])[:-2]:
         return True
     return False
 
