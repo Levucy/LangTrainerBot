@@ -128,7 +128,6 @@ async def quiz(update, context):
                 anti_cheat = True
             count += 1
         if count == 0:
-            print(f'{user} was added to the database')
             db1.execute("INSERT INTO streak(username, streak, lastword, quizzing) VALUES(?, ?, ?, ?)",
                         (user, streak, word, 1))
         elif not anti_cheat:
@@ -138,7 +137,6 @@ async def quiz(update, context):
             db2 = db1.execute("SELECT lastword FROM streak WHERE username = ?", (user,))
             for a in db2:
                 word = a[0]
-        # db1.execute("INSERT INTO streak(username, streak) VALUES(?, ?)", (user, streak))
         db.commit()
         db.close()
 
@@ -168,7 +166,15 @@ async def quiz_answer(update, context):
             db1.execute("UPDATE streak SET quizzing = 0 WHERE username = ?", (user,))
             if await quiz_answer_check(word, message.lower()): # message.lower() == translation:
                 db1.execute("UPDATE streak SET streak = ? WHERE username = ?", (streak + 1, user))
-                await update.message.reply_text(f"Это правильный ответ!\nВы верно угадали {streak + 1} слов подряд!")
+                word_case = 'слов'
+                if (streak + 1) % 10 == 1 and streak + 1 != 11:
+                    word_case = 'слово'
+                elif (streak + 1) % 10 in [2, 3, 4]:
+                    word_case = 'слова'
+                elif (streak + 1) % 10 >= 5 and str(streak + 1)[0] != '1':
+                    word_case = 'слов'
+                await update.message.reply_text(f"Это правильный ответ!\nВы верно угадали "
+                                                f"{streak + 1} {word_case} подряд!")
             else:
                 db1.execute("UPDATE streak SET streak = 0 WHERE username = ?", (user,))
                 await update.message.reply_text(f"Ответ неверный, {word} переводится как {', '.join(translation)}.")
@@ -178,11 +184,7 @@ async def quiz_answer(update, context):
 
 async def quiz_answer_check(word, message):
     message = message.replace("ё", "е")
-    symbols = ["й", "ц", "у", "к", "е", "н", "г", "ш", "щ", "з", "х", "ъ", "ф", "ы", "в", "а", "п", "р", "о", "л", "д",
-               "ж", "э", "я", "ч", "с", "м", "и", "т", "ь", "б", "ю"]
-    print([message[-2:], message[:-2], ''.join(words[word])[:-2], ''.join(words[word])[-2:]])
     if message in words[word]:
-        print([message, words[word]])
         return True
     if (message[-2:] in ["ый", "ое", "ая"] and message[:-2] in ''.join(words[word])[:-2] and
             ''.join(words[word])[-2:] in ["ый", "ое", "ая"]):
